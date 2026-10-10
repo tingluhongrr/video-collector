@@ -1,6 +1,0 @@
-# 每行一条视频链接；以下只是格式示例，请换成你要采集的视频。
-# B 站也可直接填写 BV 号，?p=2 指定第 2 P；省略 p 默认第 1 P。
-# https://www.bilibili.com/video/BVxxxxxxxxxx?p=2
-# https://www.youtube.com/watch?v=xxxxxxxxxxx
-# https://www.douyin.com/video/1234567890123456789
-# 支持粘贴含 b23.tv 或 v.douyin.com 短链接的手机分享文案。

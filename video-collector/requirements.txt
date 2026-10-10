@@ -1,4 +1,0 @@
-yt-dlp[default]>=2026.8.19
-imageio-ffmpeg>=0.6.0
-Pillow>=11.0
-packaging>=24.0
