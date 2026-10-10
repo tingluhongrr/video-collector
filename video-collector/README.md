@@ -1,0 +1,153 @@
+# 定向视频采集器
+
+指定哔哩哔哩、YouTube、抖音的**具体视频**，保存视频及其信息。提供中文桌面窗口和命令行，使用 Python + yt-dlp，不需要启动网页服务。
+
+## Windows EXE 版
+
+2026-10-02 完成提醒版为 `dist/VideoCollector-Notify-20261002.exe`：整批下载或信息保存结束时显示 Windows 完成提醒，汇总成功、失败、跳过和未执行数量，并显示保存位置。进度区域右侧“完成提醒”可开启或关闭，默认开启，自动保存选择。预览和组件更新结束不触发下载完成提醒，同一批次只提醒一次；主动停止任务会显示停止摘要。系统通知不可用时显示不阻塞操作的应用内提示。
+
+2026-10-02 亮暗模式版为 `dist/VideoCollector-Theme-20261002.exe`：顶部提供“暗色模式 / 亮色模式”切换按钮，主界面、站点设置与运行日志立即同步，不影响视频队列、画质、保存路径或下载进度。模式偏好保存在程序旁的 `settings.json`，下次启动自动恢复；旧配置默认使用亮色模式。若程序目录不可写，本次切换仍生效，状态栏会提示偏好保存失败。
+
+2026-10-02 界面重设计版为 `dist/VideoCollector-Redesign-20261002.exe`：海军蓝顶栏、浅灰背景与白色卡片；左侧添加链接和视频队列，右侧自适应封面与完整视频标题。画质、保存位置、下载栏和进度操作固定，长底栏提示可悬停查看。“保存位置”旁的“选择文件夹”按钮可更改输出目录，也支持直接输入路径。站点设置采用可滚动卡片和固定保存栏，运行日志也使用统一主题。信息模式下操作按钮显示“保存”。
+
+2026-09-30 版为 `dist/VideoCollector-20260930.exe`：修复已下载视频被误报为解析失败的问题，命中归档时显示“已下载 · 跳过”；新下载的视频最终统一为 MP4。优先无损封装，不兼容 MP4 的编码再转码。转换成功后才记入下载归档，转换失败保留源文件供重试。视频信息仍为 `metadata.json`，历史视频不会自动批量转换。
+
+2026-09-23 版为 `dist/VideoCollector-20260923.exe`：视频文件使用标题命名，并按本地下载日期集中保存，每个视频单独一个文件夹。保留新版图标、固定操作按钮与站点独立配置。GitHub 发布 ZIP 中的程序统一命名为 `VideoCollector.exe`。
+
+2026-09-19 排版修复版为 `dist/VideoCollector-20260919.exe`：日志与停止按钮移到固定进度区域；下载操作栏固定在预览卡片下方，视频详情支持滚动。窗口较矮时输入框和列表会缩小，操作按钮保持完整。启动大小适配屏幕，最小窗口降为 960×600。配置文件仍从 EXE 所在目录读取。
+
+双击 `dist/VideoCollector-Notify-20261002.exe` 即可启动。它是 Windows 64 位单文件版，内含 Python、FFmpeg、Node.js 和采集依赖，无需另装 Python 或 Miniconda，也无需携带源码与 `.deps` 文件夹。可将 EXE 单独复制使用；默认视频和报告保存在 **`D:\opencc`**，也可在窗口中改位置。第一次下载时自动创建目录；没有 D 盘的电脑请先更改保存位置。首次启动需解压内置组件，可能稍慢。
+
+EXE 不内置代理服务和登录 Cookie。访问 YouTube 所需的网络条件、B 站和抖音的登录及风控限制，与源码版相同。
+
+开发者重新打包：运行 `build_exe.bat`，或用本工作区的 Miniconda 执行 `build_exe.py`。需要 PyInstaller（本次使用 6.21.0）、已安装的项目依赖和 Node.js。构建产物位于 `dist`。运行时资源与用户输出目录依据 [PyInstaller 官方路径说明](https://pyinstaller.org/en/stable/runtime-information.html) 分开处理。
+
+## yt-dlp 自动检查与更新
+
+窗口顶部显示当前加载的 yt-dlp 版本。点击“检查并更新”会自动查询 PyPI 最新正式版，下载与当前 Python 兼容的纯 Python 包，以及匹配的 yt-dlp-ejs 组件。下载经过 SHA-256 校验，完整安装后才切换更新记录；失败时保留现有版本。更新保存到 EXE 旁的 `updates` 文件夹，**关闭并重新打开程序后生效**，无需 pip 或重打包。新模块加载失败会回退到随 EXE 附带的版本。
+
+更新只在点击按钮时执行，不会每次启动联网。已经是最新版本时只显示检查结果。更新网络可在“站点设置 / Cookie 管理”的“组件更新”页单独配置代理，不复用视频站点的代理和 Cookie。安装目录须可写；若新版要求更高的 Python 或新的二进制依赖，则仍需更新整个 EXE。官方接口参考：[PyPI JSON API](https://docs.pypi.org/api/json/)。
+
+## 站点独立配置与 Cookie 管理器
+
+“站点设置 / Cookie 管理”中，哔哩哔哩、YouTube、抖音分别有独立页面。每站分别设置 Cookie 文件和代理，例如只为 YouTube 填代理，给 B 站和抖音分别提供 Cookie。空白代理表示使用系统网络设置，不继承其他站点配置。封面请求也使用相应站点的代理。
+
+Cookie 的两种录入方式：
+
+- 点击 Chrome、Edge 或 Firefox 按钮，从所选浏览器读取；可选填浏览器 Profile 目录以指定账号。建议先关闭浏览器。
+- 点击“导入 cookies.txt”，导入 Netscape 格式文件。仅保存所选站点域名及其必要关联域名的有效 Cookie，排除其他站点与已过期条目。
+
+读取结果只显示数量和来源，不展示 Cookie 值。点击“保存配置”后，配置写入 EXE 旁的 `settings.json`，Cookie 保存在 `cookies/<站点>.cookies.txt`；旧版本程序的全局 Cookie 设置不会自动复用。读取失败不会替换已有 Cookie。Chrome / Edge 的数据库占用或系统加密限制可能导致读取失败，此时会提示使用文件导入或 Firefox。程序不会关闭浏览器、修改浏览器安全设置或破解加密保护。实现依据 [yt-dlp Cookie 官方说明](https://github.com/yt-dlp/yt-dlp/wiki/FAQ#how-do-i-pass-cookies-to-yt-dlp)。
+
+遇到 403、412 或登录提示，预览区或任务状态会提示“尝试更新 Cookie”并指向管理器。更新 Cookie 不保证解除所有平台风控；更新后重新获取视频预览即可重试。分享 EXE 时只分享 `.exe`，不要连同 `cookies` 和个人 `settings.json` 一起分享。
+
+诊断命令：`VideoCollector.exe --self-test 完整报告路径.json` 会检查内置依赖和窗口初始化，然后退出。也可使用 `VideoCollector.exe --cli` 加上原有命令行参数执行采集；由于 EXE 没有控制台，日志写入 EXE 旁的 `cli.log`，任务报告仍写入所选保存目录。
+
+通知诊断：`VideoCollector.exe --notification-test 完整报告路径.json` 发送一条明确标为“测试”的汇总提醒，约 8 秒后自动退出，不下载视频；报告中的 `ok` 代表 Windows Shell 接受请求，实际是否显示取决于系统通知设置。
+
+## 开始使用
+
+1. 双击 `dist/VideoCollector-Notify-20261002.exe`，或用 `start.bat` 启动源码版。当前工作区的依赖已安装。顶部“暗色模式 / 亮色模式”按钮可随时切换外观。
+2. 粘贴视频链接，每行一条；也可导入 UTF-8 TXT 清单或直接粘贴手机分享文案。
+3. 点击“获取视频预览”，在左侧列表选中视频。右侧显示标题、封面、作者、时长、简介及当前可访问的清晰度，预览不会下载视频。封面加载失败不影响后续操作。
+4. 选择画质上限、下载视频或仅保存信息。“保存位置”默认是 `D:\opencc`，点击“选择文件夹”即可更改，或直接输入路径。点击“下载所选”；也可先逐条设置画质，再点击“下载全部”。仅保存信息时按钮显示“保存所选”和“保存全部”。
+5. 下方进度条显示当前文件的百分比、已下载大小、速度与预计剩余时间。音视频分开传输时，各文件分别显示进度；合并阶段显示等待动画，整个视频保存完成后才标记“已下载”。
+6. 点击右上角“站点设置 / Cookie 管理”配置各平台的 Cookie 或代理；“查看日志”打开详细日志，保存目录下的 `reports` 留存任务报告。失败项会提供中文处理建议。
+7. 进度区域的“完成提醒”默认勾选，整批任务结束会显示汇总。系统通知和提示音遵循 Windows 通知与勿扰设置；程序不会强制抢到前台。Windows 10/11 的提醒显示方式由系统决定，详情参见 [微软通知 API 说明](https://learn.microsoft.com/en-us/windows/win32/api/shellapi/nf-shellapi-shell_notifyiconw)。
+
+首次复制到另一台机器、缺少依赖或需要更新提取器时，运行 `install.bat`。脚本使用工作区要求的 `D:\cscs123\Miniconda\python.exe`，依赖安装到本项目 `.deps`，不修改全局环境。其他机器可修改批处理里的 Python 路径；Python 要求 3.10 以上且包含 tkinter。
+
+## 定向采集规则
+
+| 输入 | 行为 |
+| --- | --- |
+| B 站视频页面、BV 号 | 只采集指定视频；省略 `p` 时选第 1 P |
+| B 站页面 `?p=2` | 只采集第 2 P，各分 P 分开保存 |
+| YouTube watch、youtu.be、Shorts、embed 链接 | 只采集指定视频，移除附带的播放列表参数 |
+| 抖音 `/video/数字`、`modal_id` 页面、移动分享页 | 解析为指定抖音视频 |
+| b23.tv、v.douyin.com | 先解析短链接；跳转失败时提示复制浏览器中的完整视频地址 |
+| 主页、搜索页、播放列表、直播 | 拒绝采集，避免扩展到其他视频 |
+
+这是按链接采集的版本，不包含关键词搜索或自动遍历作者全部作品。同一批次中的相同规范链接会去重；相同 BV 号与 av 号等不同标识在下载时通过提取器归档记录去重。
+
+## 命令行
+
+在本目录打开 PowerShell。替换下方示例链接中的 ID：
+
+```powershell
+# 仅收集标题、作者、简介、时长、播放量等信息
+& ..\..\Miniconda\python.exe collector.py "https://www.bilibili.com/video/BVxxxxxxxxxx?p=2"
+
+# 下载指定 YouTube 视频
+& ..\..\Miniconda\python.exe collector.py "https://www.youtube.com/watch?v=xxxxxxxxxxx" --download --quality 1080
+
+# 批量采集：先创建 urls.txt，每行一个真实视频链接
+& ..\..\Miniconda\python.exe collector.py --file urls.txt --download --output downloads
+
+# 使用自己的 Cookie 文件
+& ..\..\Miniconda\python.exe collector.py "https://www.douyin.com/video/1234567890123456789" --download --cookies cookies.txt
+
+# 使用已有代理（端口按实际设置填写）
+& ..\..\Miniconda\python.exe collector.py --file urls.txt --download --proxy "http://127.0.0.1:7890"
+```
+
+其他选项：`--interval 3` 设置任务之间的间隔，默认 2 秒；`--quality best` 选择可访问的最高画质；`--ffmpeg 路径` 指定 FFmpeg；`--node 路径` 指定 Node.js。清晰度数字是**最大高度**，不是保证输出该分辨率，也不会提高原始清晰度或转码。
+
+YouTube 的完整支持需要 JavaScript 运行时。本程序会查找 PATH 中的 Node.js、Codex 已有的 Node.js，以及 yt-dlp 默认支持的 Deno。当前工作区已找到 Node.js 24。其他机器若缺少运行时，请安装受支持的 Node.js 或 Deno，或在窗口中选择 `node.exe`。依赖中包含 yt-dlp-ejs 和用于音画合并的 FFmpeg。
+
+## 保存内容与任务状态
+
+```text
+D:\opencc/
+  2026-09-23/
+    视频标题 [youtube_视频ID]/
+      metadata.json
+      视频标题.mp4
+    另一个标题 [bilibili_视频ID或分P ID]/...
+    抖音视频标题 [douyin_视频ID]/...
+  2026-09-24/...
+  archive.txt
+  reports/<时间戳和随机编号>.json
+```
+
+日期使用每条任务开始时的电脑本地日期（不是视频发布日期）；跨午夜开始的下一条任务进入新日期文件夹。仅保存视频信息时也采用相同目录。每个视频的文件夹包含标题摘要、平台和 ID，避免不同站点、同名视频和 B 站分 P 混在一起。视频文件以标题命名，保留中文、日文和可用的 Unicode 字符；自动替换 Windows 不允许的字符、处理保留名称，并按路径长度截短过长标题，为分轨和合并临时文件预留空间。
+
+`metadata.json` 保留完整原始标题、作者、简介、时长、发布时间、播放量、点赞量、评论数、标签、封面地址和归档日期；平台未提供的字段为 null。它不保存 Cookie、请求头和临时媒体直链。封面仅记录地址，不下载封面图片。
+
+新规则应用于新版开始处理的视频；已有旧目录和文件不会自动移动或改名。下载归档仍位于保存根目录的 `archive.txt`，旧记录继续生效，跨日期也会跳过已下载视频；跳过时不新建当天的视频文件夹。未完成视频在同一天、同一标题和保存位置下可继续断点下载；跨天重试会使用新日期目录。
+
+任务报告逐条记录 `downloaded`、`metadata_saved`、`skipped_archive`、`duplicate`、`failed` 或 `cancelled`，以及文件路径和失败原因。每处理完一条即保存报告，单条失败不会中止其他任务。命令行存在失败项时返回退出码 1，启动配置错误为 2。
+
+视频成功处理后写入 `archive.txt`，再次运行会跳过。仅采集信息不会写入下载归档，也不会阻止之后下载。归档按视频标识去重，与清晰度无关；要用更高画质重新下载或恢复手动删除的文件，请换一个保存目录。程序支持 yt-dlp 的断点续传，实际能否续传取决于平台提供的地址和协议。窗口“本条完成后停止”会等待当前视频完成，之后将剩余任务记为未执行。
+
+## 登录和平台限制
+
+- 抖音常要求新鲜 Cookie。先在浏览器确认视频可播放，再使用管理器读取，或导入自己导出的 **Netscape cookies.txt** 文件；JSON、请求头字符串不是此处需要的格式。浏览器读取只在用户点击对应按钮时发生。
+- B 站遇到 412、YouTube 提示不可用、抖音遇到 403 或 Cookie 过期时，任务会失败并记录原因。程序不会绕过验证码、付费、账号或地区权限；有效 Cookie 也不保证能解决所有平台限制。
+- YouTube 必须在本机网络中可访问，可手动配置已有 HTTP/SOCKS 代理。
+- Cookie 文件包含登录信息，应只保存在本机，不要提交到代码仓库或发给他人。只采集自己有权访问和保存的内容。
+- 平台接口变化时先运行 `install.bat` 更新依赖。参考 [yt-dlp 官方说明](https://github.com/yt-dlp/yt-dlp) 和 [抖音提取器源码](https://github.com/yt-dlp/yt-dlp/blob/master/yt_dlp/extractor/tiktok.py)。
+
+## 验证
+
+2026-10-02 完成提醒版：65 项完整回归通过，新增整批通知汇总、停止时未执行数量、重复事件去重、预览及更新不触发通知、提醒开关持久化及通知失败回退。通知后端通过 14 项模拟 Windows API 测试，覆盖 x64 结构布局、Unicode 截断、临时图标生命周期及失败清理；两种主题的小窗口与高 DPI 检查通过。
+
+最终独立 EXE 的窗口、亮暗主题及内置组件自检通过，并发送过一条明确标为测试的通知，Windows Shell 已接受请求。验证报告位于 `.test-output/ui-notify/self-test.json` 和 `.test-output/ui-notify/notification-test.json`；未进行真实视频下载。
+
+2026-10-02 亮暗模式版：45 项完整回归通过，覆盖按钮切换、重启恢复偏好、保存站点配置后保留主题、写入失败时仍即时切换，以及亮暗两模式下的窗口尺寸和 100%–150% 缩放。切换过程保留视频预览、画质、保存位置、队列和下载进度；已打开的日志与站点设置窗口同步更新。
+
+2026-10-02：41 项完整回归通过。主界面验证 960×600、1180×700、1440×760 和 100%/125%/150% 缩放，确保固定按钮和保存路径控件不裁切、输入和队列保留可用空间；设置窗口的四个页签在最小尺寸下可滚动，保存和取消始终可见。新增通过“选择文件夹”按钮选择含空格与中文的目录、同步下载路径及取消保留原路径的测试。GUI 测试使用默认配置与临时目录。
+
+2026-09-30：39 项测试通过，包含真实 yt-dlp 归档短路（不联网、不误报失败）、MP4 音画合并、WebM 无损封装及 VP8 转码、转换失败保留源文件且不记入归档、界面跳过状态。真实媒体测试均检查输出容器及音视频解码。
+
+2026-09-23：完整回归通过 35 项测试，新增按日期分组、跨午夜、同名视频隔离、Windows 文件名与模板特殊字符检查；本地真实媒体下载和 FFmpeg 合并验证了标题文件名及目录位置。
+
+```powershell
+& ..\..\Miniconda\python.exe -m unittest -v test_collector test_gui test_site_config test_updater
+```
+
+已通过 31 项测试，覆盖输入规范化、分 P 区分、预览和下载、进度条、站点配置隔离、Cookie 域名过滤与过期排除、导入失败保留原文件、更新包完整性及路径检查、更新失败保留旧版本，以及使用本地生成的视频通过真实 yt-dlp 下载并用 FFmpeg 合并音画。没有读取用户真实浏览器 Cookie；浏览器按钮的调用路径使用替身验证，实际成功率取决于浏览器与系统权限。平台提取结果使用替身的测试也不代表三个平台的线上视频均可访问。
+
+最终 EXE 已复制到不含源码及 `.deps` 的独立测试目录运行，通过窗口、FFmpeg、Node.js 与三个站点提取器自检；从 PyPI 下载的外部更新包已在重启后实际加载，随后成功下载并合并 YouTube 测试视频。另已实测读取标题、作者、19 秒时长、封面和可用清晰度。验证记录位于 `.test-output/exe-self-test-final.json`、`.test-output/preview-live.json` 和 `.test-output/exe-download-final/reports`。
+
+2026-09-16 公开示例链接实测：YouTube 的 `Me at the zoo`（`jNQXAC9IVRw`）已成功采集信息、下载并合并音画；B 站返回 HTTP 412，抖音返回 HTTP 403 并要求新 Cookie。未使用私人 Cookie，B 站与抖音尚未完成真实视频下载验收。原始报告保存在 `.test-output/live/reports`，YouTube 测试视频保存在 `.test-output/live/youtube/jNQXAC9IVRw`。另一个 YouTube 旧测试视频不可用，程序正确记录失败后继续执行。
